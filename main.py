@@ -1,6 +1,19 @@
+def timeOfDay(hour):
+    if 2 <= hour < 8:   return 1 # nigth
+    if 8 <= hour < 12:  return 2 # morning
+    if 12 <= hour < 14: return 3 # midday
+    if 14 <= hour < 18: return 4 # afternoon
+    if 18 <= hour < 22: return 5 # evening
+    if 22 <= hour < 2:  return 6 # midnight
+    return 0
+
+city_center = (-122.4194, +37.7749)
+
 def prepare_data(data):
-    x = data.X
-    y = data.Y
+    # scalable from the center
+    x = data.X.apply(lambda xt: xt - city_center[0])
+    y = data.Y.apply(lambda yt: yt - city_center[1])
+    
     out_data = pd.concat([x, y], axis=1)
 
     district_enc = LabelEncoder()
@@ -12,14 +25,17 @@ def prepare_data(data):
     out_data["DayOfWeek"] = day_of_week_enc.fit_transform(data["DayOfWeek"])
     
     out_data["Month"] = data.Dates.dt.month
+    
+    out_data["TimesOfDay"] = (list(map(timeOfDay, data['Dates'].dt.hour)))
     out_data["Hour"]  = data.Dates.dt.hour
     
+    # data ranges from 01.01.2003 so we should skip years.
     out_data["Year"] = data.Dates.dt.year - 2003
     
+    #extract additional information from address.
     out_data['StreetNo'] = data['Address'].apply(lambda x: x.split(' ', 1)[0] if x.split(' ', 1)[0].isdigit() else 0)
     out_data['Blocked'] = data['Address'].apply(lambda x: 1 if "Block" in x else 0)
     out_data['StreetCorner'] = data['Address'].apply(lambda x : 1 if '/' in x else 0)
-
 
     return out_data
 
@@ -35,6 +51,7 @@ def estimate_solution(data, labels):
 def output_result_csv(prediction, classes, path):
     result=pd.DataFrame(prediction, columns=classes)
     result.to_csv(path, index = True, index_label = 'Id' )
+	
 
 import pandas as pd
 import numpy as np
@@ -53,8 +70,11 @@ train_label = le_crime.transform(train.Category)
 train_data = prepare_data(train)
 
 
-crime_rf = RandomForestClassifier()
+crime_rf = RandomForestClassifier(max_features="log2", max_depth=11, n_estimators=24, min_samples_split=1000, oob_score=True)
 crime_rf.fit(train_data, train_label)
+
+
+#estimate_solution(train_data, train_label)
 
 test_data = prepare_data(test)
 
