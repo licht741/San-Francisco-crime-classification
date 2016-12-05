@@ -1,5 +1,5 @@
 def timeOfDay(hour):
-    if 2 <= hour < 8:   return 1 # nigth
+    if 2 <= hour < 8:   return 1 # night
     if 8 <= hour < 12:  return 2 # morning
     if 12 <= hour < 14: return 3 # midday
     if 14 <= hour < 18: return 4 # afternoon
